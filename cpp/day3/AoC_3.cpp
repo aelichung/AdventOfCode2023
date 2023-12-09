@@ -27,6 +27,7 @@ public:
 
 std::ostream& operator<<(std::ostream& os, const Position& pos) {
 	os << "Row: " << pos.Row << ", Column: " << pos.Column;
+	return os;
 }
 
 
