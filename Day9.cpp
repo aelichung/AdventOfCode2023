@@ -11,16 +11,15 @@
 
 class ValueHistory {
 	std::vector<long long> Values;
-public:	
-	ValueHistory(std::vector<long long> values) : Values(values) {};
+	std::vector<std::vector<long long>> differencePyramid;
 
-	long long GetPrediction() {
-		std::vector<std::vector<long long>> differencePyramid;
+	std::vector<std::vector<long long>> BuildPyramid(std::vector<long long> values) {
+		std::vector<std::vector<long long>> diffPyramid;
 		//while the differences are not all 0's, we should make a new vector and populate it with differences
-		std::vector<long long> differences = Values;
+		std::vector<long long> differences = values;
 		bool AllDifferencesAreZero = false;
 		while (!AllDifferencesAreZero) {
-			differencePyramid.push_back(differences);
+			diffPyramid.push_back(differences);
 			int numZeros = 0;
 			for (auto& diff : differences) {
 				if (diff != 0) {
@@ -38,14 +37,21 @@ public:
 			std::vector<long long> tempDiffs;
 			for (int diffIndex = 1; diffIndex < differences.size(); diffIndex++) {
 				long long difference = differences[diffIndex] - differences[diffIndex - 1];
-				tempDiffs.push_back(difference);				
+				tempDiffs.push_back(difference);
 			}
 			differences = tempDiffs;
 		}
+		return diffPyramid;
+	}
+public:	
+	ValueHistory(std::vector<long long> values) : Values(values) {
+		differencePyramid = BuildPyramid(values);
+	};
 
+	long long GetFuturePrediction() {
 		long long add = 0;
 		differencePyramid.back().push_back(0ll);
-		auto pyramidIter = differencePyramid.rbegin() + 1;
+		auto pyramidIter = differencePyramid.rbegin();
 		while (std::next(pyramidIter,1) != differencePyramid.rend()) {
 			auto currentDiffVector = *pyramidIter;
 			auto aboveDiffVector = *std::next(pyramidIter, 1);
@@ -56,6 +62,22 @@ public:
 		}
 		return add;
 	}
+
+	long long GetPastPrediction() {
+		long long add = 0;
+		differencePyramid.back().push_back(0ll);
+		auto pyramidIter = differencePyramid.rbegin();
+		while (std::next(pyramidIter, 1) != differencePyramid.rend()) {
+			auto currentDiffVector = *pyramidIter;
+			auto aboveDiffVector = *std::next(pyramidIter, 1);
+			add = aboveDiffVector.front() - currentDiffVector.front();
+			aboveDiffVector.insert(aboveDiffVector.begin(), add);
+			*std::next(pyramidIter, 1) = aboveDiffVector;
+			++pyramidIter;
+		}
+		return add;
+	}
+
 };
 
 int main() {
@@ -80,14 +102,20 @@ int main() {
 	}
 	ifs.close();
 
-	long long sum = 0;
+	long long futureSum = 0;
+	long long pastSum = 0;
 
 	for (auto& history : histories) {
-		auto prediction = history.GetPrediction();
-		sum += prediction;
-		std::cout << "prediction: " << prediction << std::endl;
+		auto prediction = history.GetFuturePrediction();
+		futureSum += prediction;
+		
+		auto pastPrediction = history.GetPastPrediction();
+		std::cout<<"past prediction: "<<pastPrediction << std::endl;
+		pastSum += pastPrediction;
 	}
-	std::cout << "sum: " << sum << std::endl;
+	std::cout << "part 1 future prediction sum: " << futureSum << std::endl;
+
+	std::cout << "part 2 past prediction sum: "<< pastSum << std::endl;
 
 	return 0;
 }
