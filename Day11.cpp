@@ -41,12 +41,12 @@ public:
 
 struct Universe {
 public:	
+	const long long expansionFactor = 999999;
 	std::unordered_set<Position, PositionHash> collapsedGalaxies;
-	std::vector<Position> expandedGalaxies;
-	long long rowCount, columnCount;
+	std::vector<Position> expandedGalaxies;	
 	Universe() {};
 
-	void Expand() {
+	void Expand(long long rowCount, long long columnCount) {
 		std::vector<long long> emptyRows, emptyColumns;
 
 		for (long long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
@@ -76,9 +76,6 @@ public:
 			}
 		}
 
-		rowCount += emptyRows.size();
-		columnCount += emptyColumns.size();
-
 		for (auto& galaxy : collapsedGalaxies) {
 			expandedGalaxies.push_back(galaxy);		
 		}
@@ -88,12 +85,12 @@ public:
 			for (auto& colIndex : emptyColumns)
 			{
 				if (oldPos.x > colIndex) {
-					galaxy.x += 1;
+					galaxy.x += expansionFactor;
 				}
 			}
 			for (auto& rowIndex : emptyRows) {
 				if (oldPos.y > rowIndex) {
-					galaxy.y += 1;
+					galaxy.y += expansionFactor;
 				}
 			}
 		}
@@ -116,33 +113,31 @@ int main() {
 	std::ifstream ifs("input.txt");
 	std::string inputString;
 	Universe universe;
-	std::vector<std::vector<Position>> allNodes;
+	
 	std::unordered_set<Position, PositionHash> galaxies;
-	long long rowIndex = 0;
+	long long rowIndex = 0, columnIndex = 0;
 	//read the galaxy from input
 	while (ifs.good())
-	{
-		std::vector<Position> row;
+	{		
 		std::getline(ifs, inputString);
-		universe.columnCount = inputString.size();
+		
 		for (long long colIndex = 0; colIndex < inputString.size(); colIndex++) {
 			Position pos(colIndex, rowIndex);
-			row.push_back(pos);
 			if (inputString[colIndex] == '#') {
 				galaxies.insert(pos);
 			}
 		}
-		allNodes.push_back(row);
+		
+		columnIndex = inputString.size();
 		++rowIndex;
 	}
 	ifs.close();	
-	universe.rowCount = allNodes.size();
+	
 	universe.collapsedGalaxies = galaxies;
-
-	std::cout << "universe column count: " << universe.columnCount << ", universe row count: " << universe.rowCount << std::endl;
+	
 	//expand the galaxy
-	universe.Expand();
-	std::cout << "After expansion: universe column count: " << universe.columnCount << ", universe row count: " << universe.rowCount << std::endl;
+	universe.Expand(rowIndex, columnIndex);
+	
 	long long sum = universe.MinDistanceSum();
 	std::cout << "the sum of minimum distances for all the galaxies is: " << sum << std::endl;
 	return 0;
