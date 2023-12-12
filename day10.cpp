@@ -3,12 +3,29 @@
 #include<fstream>
 #include<regex>
 #include<numeric>
+#include <unordered_set>
 
 struct Position {
 public:
 	long long x, y; //where x is the column count and y is the row count
-	Position() {};
+	Position() {
+		x = -1;
+		y = -1;
+	};
 	Position(long long x, long long y) : x(x), y(y) {};
+
+	bool operator==(const Position& position) const
+	{
+		return position.x == x && position.y == y;
+	}
+};
+
+class PositionHash {
+public:
+	size_t operator()(const Position& pos) const
+	{
+		return (std::hash<long long>()(pos.x)) ^ (std::hash<long long>()(pos.y));
+	}
 };
 
 class MapNode {	
@@ -17,25 +34,10 @@ public:
 	char character;
 	MapNode() {};
 	MapNode(Position pos, char c) :position(pos), character(c) {};
-};
 
-class Pipe :public MapNode{
-	Position position;	
-	
-public:
-	Pipe(Position pos, char c) : MapNode(pos, c) {};
-
-};
-
-class Ground : public MapNode{
-public:
-	Ground(Position pos, char c) : MapNode(pos, c) {};
-};
-
-class Start : public MapNode{
-public:
-	Start() {};
-	Start(Position pos, char c) : MapNode(pos, c) {};
+	constexpr bool operator==(const MapNode& mapNode) {
+		return mapNode.position.x == position.x && mapNode.position.y == position.y;
+	}
 };
 
 class MapGrid {
@@ -449,15 +451,144 @@ int main() {
 			break;
 		}
 	}
-
+	std::unordered_set<Position, PositionHash> loopPositions;
 	for (auto& node : actualLoop) {
 		std::cout << "node: "<<node.character << std::endl;
+		loopPositions.insert(node.position);
 	}
 
+	long long furthestDistance = (actualLoop.size() - 1) / 2;
+	std::cout << "number of steps furthest from start: " << furthestDistance << std::endl;
 
-	std::cout << "number of steps furthest from start: " << (actualLoop.size() - 1) / 2 << std::endl;
+	//figure out what S is
+	MapNode startConnection1 = actualLoop.at(1);
+	MapNode startConnection2 = actualLoop.at(actualLoop.size() - 2);
+
+	if (startConnection1.position.y == grid.start.position.y && startConnection2.position.y == grid.start.position.y) //F,7,J,L,|,-
+	{
+		grid.start.character = '-';		
+	}
+
+	if (startConnection1.position.x == grid.start.position.x && startConnection2.position.x == grid.start.position.x)
+	{
+		grid.start.character = '|';
+	}
+
+	if (startConnection1.position.x > grid.start.position.x) //start is F or L
+	{
+		if (startConnection2.position.y > grid.start.position.y) {
+			grid.start.character = 'F';
+		}
+		else {
+			grid.start.character = 'L';
+		}
+	}
+
+	//vice versa?
+	if (startConnection2.position.x > grid.start.position.x) //start is F or L
+	{
+		if (startConnection1.position.y > grid.start.position.y) {
+			grid.start.character = 'F';
+		}
+		else {
+			grid.start.character = 'L';
+		}
+	}
+
+	if (startConnection1.position.x < grid.start.position.x) //start is 7 or J
+	{
+		if (startConnection2.position.y > grid.start.position.y) {
+			grid.start.character = 'J';
+		}
+		else {
+			grid.start.character = '7';
+		}
+	}
+
+	if (startConnection2.position.x < grid.start.position.x) //start is 7 or J
+	{
+		if (startConnection1.position.y > grid.start.position.y) {
+			grid.start.character = 'J';
+		}
+		else {
+			grid.start.character = '7';
+		}
+	}
+
+	grid.nodes.at(grid.start.position.y).at(grid.start.position.x).character = grid.start.character;
+	long long groundSum = 0;
+
+	for (long long rowIndex = 0; rowIndex < grid.rowCount; rowIndex++) {		
+		std::vector<MapNode> row = grid.nodes[rowIndex];
+		long long lastKnownLoopEdge = 0;
+		int edgeEncounters = 0;
+		bool encounteredF = false;
+		bool encounteredL = false;
+		for (long long colIndex = 0; colIndex < grid.columnCount; colIndex++) {
+			MapNode node = row.at(colIndex);	
+			long long diff = 0;
+			
+			if (loopPositions.contains(node.position)) {
+				if (node.character == 'F') {
+					encounteredF = true;
+					diff = node.position.x - lastKnownLoopEdge;
+					++edgeEncounters;
+					if (diff <= 1) continue;
+					if (edgeEncounters % 2 == 0 && edgeEncounters != 0) {
+						groundSum -= diff - 1; //remove any ground area that was surrounded
+					}
+				}
+				if (node.character == 'J' && encounteredF) {
+					encounteredF = false;					
+					lastKnownLoopEdge = node.position.x;
+				}
+				if (node.character == '7' && encounteredF) {
+					encounteredF = false;
+					++edgeEncounters;
+					lastKnownLoopEdge = node.position.x;
+				}
+				if (node.character == 'L') {
+					encounteredL = true;					
+					++edgeEncounters;
+					diff = node.position.x - lastKnownLoopEdge;
+					if (diff <= 1) continue;
+					if (edgeEncounters % 2 == 0 && edgeEncounters != 0) {
+						groundSum -= diff - 1; //remove any ground area that was surrounded
+					}
+				}
+				if (node.character == 'J' && encounteredL) {
+					encounteredL = false;
+					++edgeEncounters;
+					lastKnownLoopEdge = node.position.x;
+				}
+				if (node.character == '7' && encounteredL) {
+					encounteredL = false;					
+					lastKnownLoopEdge = node.position.x;
+				}
+				if (node.character == '|') {
+					++edgeEncounters;
+					diff = node.position.x - lastKnownLoopEdge;
+					lastKnownLoopEdge = node.position.x;
+					if (diff <= 1) continue;
+					if (edgeEncounters % 2 == 0 && edgeEncounters != 0) {
+						groundSum -= diff - 1; //remove any ground area that was surrounded
+					}
+				}						
+							
+							
+							
+				continue;
+			}
+			
+			++groundSum;
+		}
+		std::cout << "amount of outer ground area in the row number: " << rowIndex << " is:" << groundSum << std::endl;
+	}
 	
-	//std::cout << "part 2 " <<  std::endl;
+	long long totalArea = grid.rowCount * grid.columnCount;
+	long long innerArea = totalArea - loopPositions.size() - groundSum;
+	
+	std::cout << "part 2, inner area: " << innerArea<<  std::endl;
 
 	return 0;
 }
