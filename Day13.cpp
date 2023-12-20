@@ -7,6 +7,7 @@ struct MirrorNotes {
 public:
 	std::vector<std::string> horizontalStrings;
 	std::vector<std::string> verticalStrings;
+	bool smudgeFound = false;
 
 	MirrorNotes(std::vector<std::string> hStrings) : horizontalStrings(hStrings)
 	{
@@ -20,27 +21,77 @@ public:
 		}
 	}
 
+	bool OffByOne(std::string stringA, std::string stringB) {
+		int count = 0;
+		for (long long i = 0; i < stringA.length(); i++) {
+			if (stringA[i] != stringB[i]) {
+				++count;
+				if (count > 1) return false;
+			}
+		}
+		return count == 1;
+	}
+
 	std::vector<long long> FindReflectionLine(std::vector<std::string> stringsVector)
 	{
 		std::vector<long long> reflectionEdge;
+
 		for (long long i = 1; i < stringsVector.size(); i++)
 		{
-			if (stringsVector[i] == stringsVector[i - 1]) {
+			int smudgeCount = 0;
+			bool shouldCheck = false;
+
+			std::string stringA = stringsVector[i - 1];
+			std::string stringB = stringsVector[i];
+			if ( stringA == stringB) {
+				shouldCheck = true;
+			}
+			else if (OffByOne(stringA, stringB)) {
+				++smudgeCount;
+				shouldCheck = true;
+				if (smudgeCount > 1) 
+				{
+					shouldCheck = false;
+					continue;
+				}
+			}
+
+			if (shouldCheck) {
 				//potential mirror edge, expand out until we meet an edge or if the edge doesn't match
 				long long greaterIndex = i;
 				long long lesserIndex = i - 1;
 				long long maxEdge = stringsVector.size() - 1;
 				long long minEdge = 0;
+				auto nextStringA = stringsVector[lesserIndex];
+				auto nextStringB = stringsVector[greaterIndex];
+				bool isOffByOne = OffByOne(nextStringA, nextStringB);
 
 				do {
 					if (greaterIndex == maxEdge || lesserIndex == minEdge) {
-						reflectionEdge.push_back(i - 1);
-						reflectionEdge.push_back(i);
-						return reflectionEdge;
+						if (smudgeCount == 1) {
+							reflectionEdge.push_back(i - 1);
+							reflectionEdge.push_back(i);
+							smudgeFound = true;
+							return reflectionEdge;
+						}
+						shouldCheck = false;
+						continue;
 					}
 					++greaterIndex;
 					--lesserIndex;
-				} while (stringsVector[greaterIndex] == stringsVector[lesserIndex]);
+					nextStringA = stringsVector[lesserIndex];
+					nextStringB = stringsVector[greaterIndex];
+					
+					isOffByOne = OffByOne(nextStringA, nextStringB);
+					if (isOffByOne) {
+						++smudgeCount;
+						if (smudgeCount > 1)
+						{
+							shouldCheck = false;
+							break;
+						}
+					}
+				} while ( (nextStringA == nextStringB || isOffByOne) && smudgeCount <= 1 && shouldCheck);
 			}
 		}
 		return reflectionEdge;
@@ -90,9 +141,13 @@ int main() {
 
 	long long verticalSum = 0;
 	long long horizontalSum = 0;
-	for (auto& note : notes) {
-		verticalSum += note.NumberOfColumnsToTheLeft();
-		horizontalSum += note.NumberOfRowsAbove();
+	for (auto& note : notes) {		
+		auto above = note.NumberOfRowsAbove();
+		auto left = note.NumberOfColumnsToTheLeft();
+		std::cout << "note number of columns to the left: " << left << "\n";
+		std::cout << "note number of rows above: " << above << "\n";
+		verticalSum += left;
+		horizontalSum += above;
 	}
 
 	long long summary = verticalSum + 100 * horizontalSum;
