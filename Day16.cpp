@@ -122,7 +122,7 @@ void Visit(
 		if (!data.visited) {
 			++visitedCount;
 			data.visited = true;
-			std::cout << currentPosition.x << ", " << currentPosition.y << '\n';
+			//std::cout << currentPosition.x << ", " << currentPosition.y << '\n';
 		}
 
 
@@ -222,9 +222,10 @@ void Visit(
 
 int main() {
 	std::unordered_map<Position, PositionData, PositionHash> visitedMap;
+	std::unordered_map<Position, PositionData, PositionHash> initialMap;
 	long long visitedCount = 0;
 
-	std::ifstream ifs("input-test.txt");
+	std::ifstream ifs("input.txt");
 	std::string s;
 	long long rowIndex = 0;
 	while (ifs.good()) {
@@ -240,28 +241,68 @@ int main() {
 	}
 	long long colCount = s.length();
 	ifs.close();
+	initialMap = visitedMap;
 
-	Position start(0, 0);
+	/*Position start(0, 0);
 	Visit(visitedMap, visitedCount, start, rowIndex, colCount, right);
 
-	std::cout << " visited count: " << visitedCount << '\n';
+	std::cout << " visited count: " << visitedCount << '\n';*/
 
-	std::vector<Position> startPositions;
+	std::vector<Position> upperEdgeStarts;
+	std::vector<Position> lowerEdgeStarts;
+	std::vector<Position> rightEdgeStarts;
+	std::vector<Position> leftEdgeStarts;
 	for (long long i = 0; i < rowIndex; i++) {
 		Position leftPos(0, i);
 		Position rightPos(colCount - 1, i);
-		startPositions.push_back(leftPos);
-		startPositions.push_back(rightPos);
+		leftEdgeStarts.push_back(leftPos);
+		rightEdgeStarts.push_back(rightPos);
 	}
 
-	for (long long i = 1; i < colCount - 1; i++) {
+	for (long long i = 0; i < colCount; i++) {
 		Position upPos(i, 0);
 		Position downPos( i, rowIndex - 1 );
-		startPositions.push_back(upPos);
-		startPositions.push_back(downPos);
+		upperEdgeStarts.push_back(upPos);
+		lowerEdgeStarts.push_back(downPos);
+	}	
+
+	long long maxVisisted = 0;
+	for (auto pos : upperEdgeStarts) {
+		visitedCount = 0;
+		visitedMap = initialMap;
+		Visit(visitedMap, visitedCount, pos, rowIndex, colCount, down);
+		if (visitedCount > maxVisisted) {
+			maxVisisted = visitedCount;
+		}
 	}
 
-	std::cout << "start positions size: " << startPositions.size() << '\n';
+	for (auto pos : lowerEdgeStarts) {
+		visitedCount = 0;
+		visitedMap = initialMap;
+		Visit(visitedMap, visitedCount, pos, rowIndex, colCount, up);
+		if (visitedCount > maxVisisted) {
+			maxVisisted = visitedCount;
+		}
+	}
 
+	for (auto pos : leftEdgeStarts) {
+		visitedCount = 0;
+		visitedMap = initialMap;
+		Visit(visitedMap, visitedCount, pos, rowIndex, colCount, right);
+		if (visitedCount > maxVisisted) {
+			maxVisisted = visitedCount;
+		}
+	}
+
+	for (auto pos : rightEdgeStarts) {
+		visitedCount = 0;
+		visitedMap = initialMap;
+		Visit(visitedMap, visitedCount, pos, rowIndex, colCount, left);
+		if (visitedCount > maxVisisted) {
+			maxVisisted = visitedCount;
+		}
+	}
+
+	std::cout << "max visited: " << maxVisisted << '\n';
 	return 0;
 }
