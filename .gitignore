@@ -399,6 +399,7 @@ FodyWeavers.xsd
 AdventOfCode2023.sln
 *.vcxproj
 *.filters
+
+# input files
 input.txt
-input.txt
-input.txt
+/inputs/
