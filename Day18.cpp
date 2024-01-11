@@ -37,12 +37,35 @@ int main() {
 		return result;
 	};
 
-	std::vector<Coord> vertices;
+	std::vector<Coord> vertices_part1;
+	std::vector<Coord> vertices_part2;
 
 	std::ifstream ifs("input.txt");
 	std::string s;
-	Coord vertex{ 0,0 };	
-	int64_t perimeter = 0;
+	Coord vertex1{ 0,0 };	
+	Coord vertex2{ 0,0 };
+	
+	int64_t perimeter1 = 0;
+	int64_t perimeter2 = 0;
+
+	auto numToChar = [](char num) {
+		char result;
+		switch (num) {
+		case '0':
+			result = 'R';
+			break;
+		case '1':
+			result = 'D';
+			break;
+		case '2':
+			result = 'L';
+			break;
+		case '3':
+			result = 'U';
+			break;
+		}
+		return result;
+	};
 
 	while (ifs.good()) {
 		std::getline(ifs, s);
@@ -52,20 +75,29 @@ int main() {
 		int64_t multiplier = std::stoi(multiString);
 		std::cout << "direction: " << directionChar << " multiplier: " << multiplier << '\n';
 
-		vertex = vertex +  move_direction(directionChar, multiplier);
-		perimeter += multiplier;
-		vertices.push_back(vertex);
+		vertex1 = vertex1 +  move_direction(directionChar, multiplier);
+		perimeter1 += multiplier;
+		vertices_part1.push_back(vertex1);
+
+		directionChar = numToChar(s[s.size() - 2]);
+		auto startIndex = s.find("#");
+		multiString = s.substr(startIndex + 1, 5);
+		multiplier = std::stoul(multiString, nullptr, 16);
+		vertex2 = vertex2 + move_direction(directionChar, multiplier);
+		perimeter2 += multiplier;
+		vertices_part2.push_back(vertex2);
+		std::cout << "direction: " << directionChar << " multiplier: " << multiplier << '\n';
 	}
 	ifs.clear();
 
-	for (auto v : vertices) {
+	for (auto v : vertices_part1) {
 		std::cout << v.x << ", " << v.y << '\n';
 	}
 
-	auto area_shoelace = [&]() {
+	auto area_shoelace = [&](const std::vector<Coord>& vertices) {
 		int64_t area = 0;
 		
-		for (int i = 0; i < vertices.size(); i++) {			
+		for (int i = 0; i < vertices.size(); i++) {
 			auto j = (i + 1) % vertices.size();
 			area = area + vertices[i].x * vertices[j].y;
 			area = area - vertices[i].y * vertices[j].x;
@@ -74,11 +106,12 @@ int main() {
 		return area;
 	};
 
-	auto inner_area = [&]() {
-		return area_shoelace() - (perimeter / 2) + 1;
+	auto inner_area = [&](const std::vector<Coord>& vertices, const int64_t& perimeter) {
+		return area_shoelace(vertices) - (perimeter / 2) + 1;
 	};
 
-	std::cout << "part 1: " << inner_area() + perimeter << '\n';
+	std::cout << "part 1: " << inner_area(vertices_part1, perimeter1) + perimeter1 << '\n';
+	std::cout << "part 2: " << inner_area(vertices_part2, perimeter2) + perimeter2 << '\n';
 
 	return 0;
 }
