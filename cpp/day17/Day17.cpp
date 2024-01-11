@@ -68,7 +68,7 @@ int main() {
 	auto can_step = [&](Coord coord) {
 		if (coord.row < 0 || coord.col < 0)
 			return false;
-		if (coord.row >= std::ssize(grid))
+		if (coord.row >= std::ssize(grid)) //std::size & ssize allows you to avoid unwanted unsigned-ness 
 			return false;
 		if (coord.col >= std::ssize(grid[0]))
 			return false;
