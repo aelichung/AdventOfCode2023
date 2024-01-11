@@ -106,12 +106,12 @@ int main() {
 		return area;
 	};
 
-	auto inner_area = [&](const std::vector<Coord>& vertices, const int64_t& perimeter) {
-		return area_shoelace(vertices) - (perimeter / 2) + 1;
+	auto area = [&](const std::vector<Coord>& vertices, const int64_t& perimeter) {
+		return area_shoelace(vertices) + (perimeter / 2) + 1;
 	};
 
-	std::cout << "part 1: " << inner_area(vertices_part1, perimeter1) + perimeter1 << '\n';
-	std::cout << "part 2: " << inner_area(vertices_part2, perimeter2) + perimeter2 << '\n';
+	std::cout << "part 1: " << area(vertices_part1, perimeter1) << '\n';
+	std::cout << "part 2: " << area(vertices_part2, perimeter2)<< '\n';
 
 	return 0;
 }
