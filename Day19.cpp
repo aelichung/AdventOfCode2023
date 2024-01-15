@@ -17,6 +17,41 @@ namespace {
 			return x + m + a + s;
 		}
 	};
+	struct Range {
+		int64_t min, max;
+	};
+	struct PartRanges {
+		Range x = {1,4000}, m = { 1,4000 }, a = { 1,4000 }, s = { 1,4000 };
+		PartRanges EditRange(char c, Range range) {
+			PartRanges result{ x,m,a,s };
+			//more restrictive range stays
+			switch (c) {
+			case 'x':
+				result.x = { std::max(range.min, x.min), std::min(range.max, x.max) };
+				break;
+			case 'm':				
+				result.m = { std::max(range.min, m.min), std::min(range.max, m.max) };
+				break;
+			case 'a':								
+				result.a = { std::max(range.min, a.min) , std::min(range.max, a.max) };
+				break;
+			case 's':								
+				result.s = { std::max(range.min, s.min), std::min(range.max, s.max) };
+				break;
+			}
+			return result;
+		}
+
+		int64_t GetPossibleCombinations() {
+			int64_t product = 1;
+			auto xRange = x.max - x.min + 1;
+			auto mRange = m.max - m.min + 1;
+			auto aRange = a.max - a.min + 1;
+			auto sRange = s.max - s.min + 1;
+			product = xRange * mRange * aRange * sRange;
+			return product;
+		}
+	};
 	struct Rule {
 		char category = ' ';
 		char operative = ' ';
@@ -51,7 +86,7 @@ namespace {
 				return true; // our rule has no condition, presumably because it is the last rule in a workflow
 			}
 			
-			bool result;
+			bool result = true;
 			int64_t actualRating = getPartRating(part);
 
 			switch (operative) {
@@ -64,11 +99,65 @@ namespace {
 			}
 			return result;
 		}
+
+		Range acceptableRange() const{
+			Range result{1,4000};
+			switch (operative) {
+			case '>':
+				result = {rating + 1, 4000};
+				break;
+			case '<':
+				result = { 1, rating - 1 };
+				break;
+			}
+			return result;
+		}
+
+		//should only be called for rules preceding the last rule
+		Range rejectedRange() const {
+			if (category == ' ') std::cout << "no operation set, are we getting the rejected range for the last rule?"<<'\n';
+			Range result{ 0,0 };
+			switch (operative) {
+			case '>':
+				result = { 1, rating };
+				break;
+			case '<':
+				result = { rating, 4000};
+				break;
+			}
+			return result;
+		}
 	};
 	struct Workflow {
-		std::vector<Rule> rules;		
+		std::vector<Rule> rules;
 	};	
 }
+
+//part 2
+int64_t sum_combinations(std::map<std::string, Workflow>& workflows, std::string name, PartRanges partRanges) {	
+	std::string destination = name;
+	if (destination == "A") return partRanges.GetPossibleCombinations();
+	if (destination == "R") return (int64_t)0;
+	int64_t total = 0;
+	auto workflow = workflows[destination];
+	for (const auto& rule : workflow.rules) {
+		//sucessful process:
+		auto goodRange = rule.acceptableRange();		
+		if (goodRange.min <= goodRange.max) {
+			auto newRanges = partRanges.EditRange(rule.category, goodRange);
+			total += sum_combinations(workflows, rule.destination, newRanges);
+		}
+		//failure process, only use on rules that have conditions (not the last rule)
+		if (rule.category != ' ') {
+			auto failRange = rule.rejectedRange();
+			if (failRange.min <= failRange.max) {
+				auto newRanges = partRanges.EditRange(rule.category, failRange);
+				partRanges = newRanges;
+			}
+		}		
+	}
+	return total;
+};
 
 int main() {
 	std::ifstream ifs("input.txt");
@@ -164,6 +253,11 @@ int main() {
 		}
 	}
 	std::cout << "part 1: " << part1_sum << '\n';
+
+	PartRanges partRanges;
+	auto sum = sum_combinations(workflows, "in", partRanges);
+
+	std::cout << "part 2:" << sum << '\n';
 	
 	return 0;
 }
