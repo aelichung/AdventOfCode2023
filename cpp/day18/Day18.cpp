@@ -94,7 +94,7 @@ int main() {
 		std::cout << v.x << ", " << v.y << '\n';
 	}
 
-	auto area_shoelace = [&](const std::vector<Coord>& vertices) {
+	auto area_greens = [&](const std::vector<Coord>& vertices) {
 		int64_t area = 0;
 		
 		for (int i = 0; i < vertices.size(); i++) {
@@ -107,7 +107,7 @@ int main() {
 	};
 
 	auto area = [&](const std::vector<Coord>& vertices, const int64_t& perimeter) {
-		return area_shoelace(vertices) + (perimeter / 2) + 1;
+		return area_greens(vertices) + (perimeter / 2) + 1;
 	};
 
 	std::cout << "part 1: " << area(vertices_part1, perimeter1) << '\n';
