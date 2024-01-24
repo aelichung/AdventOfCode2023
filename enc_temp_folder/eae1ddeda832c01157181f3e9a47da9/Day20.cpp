@@ -171,7 +171,8 @@ int main() {
 	modSystem.modules[b.label] = b;
 
 	std::ifstream ifs ("input-test.txt");
-	std::string input;	
+	std::string input;
+	std::regex moduleLabelPattern{ R"(([&%]*)([\w]+) )" };	
 	std::regex destinationsPattern{ R"(([\w]+))" };
 
 	while (ifs.good()) {
@@ -179,39 +180,37 @@ int main() {
 		std::getline(ifs, input);
 		auto rightIndex = input.find("-> ");		
 		auto rightString = input.substr(rightIndex + 2);
-		
+		std::smatch smatch;
+		Broadcaster broadcaster{};
+		FlipFlop flipFlop{};
+		Conjunction conjunction{};
+
 		std::sregex_token_iterator iter(rightString.begin(), rightString.end(), destinationsPattern);
 		std::sregex_token_iterator end;
-		std::vector<std::string> destinations;
-		while (iter != end) {
-			destinations.push_back(*iter);
-			++iter;
-		}
-
 		switch (input[0]) {
 		case 'b':
-		{
-			Broadcaster broadcaster{};
-			broadcaster.destinations = destinations;
+			while (iter != end) {				
+				broadcaster.destinations.push_back(*iter);
+				++iter;
+			}
 			modSystem.modules[broadcaster.label] = broadcaster;
 			break;
-		}
-		case '%':	
-		{
-			FlipFlop flipFlop{};
-			flipFlop.label = input.substr(1, rightIndex - 2);
-			flipFlop.destinations = destinations;
+		case '%':		
+			flipFlop.label = input.substr(1, rightIndex -2);
+			while (iter != end) {
+				flipFlop.destinations.push_back(*iter);
+				++iter;
+			}
 			modSystem.modules[flipFlop.label] = flipFlop;
 			break;
-		}
-		case '&':
-		{
-			Conjunction conjunction{};
-			conjunction.label = input.substr(1, rightIndex - 2);
-			conjunction.destinations = destinations;
+		case '&':			
+			conjunction.label = input.substr(1, rightIndex -2);
+			while (iter != end) {
+				conjunction.destinations.push_back(*iter);
+				++iter;
+			}
 			modSystem.modules[conjunction.label] = conjunction;
 			break;
-		}
 		}		
 	}
 
@@ -219,8 +218,6 @@ int main() {
 		std::cout << labelPair.first << '\n';
 	}
 	std::cout << modSystem.modules.size();
-
-
 	
 	return 0;
 }
