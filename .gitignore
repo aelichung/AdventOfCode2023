@@ -403,3 +403,4 @@ AdventOfCode2023.sln
 # input files
 input.txt
 /inputs/
+input-test.txt
